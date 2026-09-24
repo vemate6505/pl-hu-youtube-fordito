@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PL → HU YouTube Fordító v0.2</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:#0d0f13;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:920px;margin:auto;padding:20px}
+.title{font-size:clamp(30px,7vw,54px);font-weight:850;line-height:1.05;margin:20px 0 26px}
+.card{background:#171a20;border:1px solid #343841;border-radius:22px;padding:18px;margin-bottom:18px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+input{flex:1;min-width:220px;padding:15px;border-radius:14px;border:1px solid #444;background:#0f1116;color:#fff;font-size:17px}
+button{padding:15px 20px;border:0;border-radius:14px;font-weight:800;font-size:16px;cursor:pointer}
+.video{position:relative;aspect-ratio:16/9;background:#000;border-radius:20px;overflow:hidden}
+.video iframe{width:100%;height:100%;border:0}
+.sub{position:absolute;left:5%;right:5%;bottom:7%;text-align:center;font-weight:850;font-size:clamp(20px,5vw,38px);line-height:1.18;text-shadow:0 2px 8px #000;background:rgba(0,0,0,.72);padding:10px 14px;border-radius:14px;pointer-events:none}
+.status{color:#b9bec9;line-height:1.45}
+.ok{color:#72e6a5;font-weight:750}
+</style>
+</head>
+<body>
+<main class="wrap">
+<div class="title">🇵🇱 → 🇭🇺 YouTube Fordító <span style="font-size:.5em;color:#aaa">v0.2</span></div>
+
+<section class="card">
+<div class="row">
+<input id="url" value="https://youtu.be/RWKjvaV_rv4" aria-label="YouTube URL">
+<button onclick="loadVideo()">Videó betöltése</button>
+</div>
+<p class="status">HTTPS-es mobilteszt. A v0.2 célja a YouTube beágyazott lejátszó stabil működésének ellenőrzése.</p>
+</section>
+
+<section class="video">
+<iframe id="player"
+src="https://www.youtube.com/embed/RWKjvaV_rv4?playsinline=1&rel=0"
+title="YouTube videó"
+allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+allowfullscreen
+referrerpolicy="strict-origin-when-cross-origin"></iframe>
+<div class="sub">Magyar fordítás itt fog megjelenni.</div>
+</section>
+
+<section class="card">
+<div class="ok">v0.2 teszt</div>
+<p class="status">Ha a videó itt már elindul, a következő lépés a lengyel felirat időzített feldolgozása és a magyar fordítás rákapcsolása.</p>
+</section>
+</main>
+
+<script>
+function videoId(v){
+  try{
+    const u=new URL(v.trim());
+    if(u.hostname.includes('youtu.be')) return u.pathname.slice(1).split('/')[0];
+    if(u.searchParams.get('v')) return u.searchParams.get('v');
+    const m=u.pathname.match(/\/(?:embed|shorts)\/([^/?]+)/);
+    return m ? m[1] : '';
+  }catch(e){
+    const m=v.trim().match(/^[\w-]{11}$/);
+    return m ? m[0] : '';
+  }
+}
+function loadVideo(){
+  const id=videoId(document.getElementById('url').value);
+  if(!id){ alert('Nem sikerült felismerni a YouTube-linket.'); return; }
+  document.getElementById('player').src=
+    'https://www.youtube.com/embed/'+encodeURIComponent(id)+'?playsinline=1&rel=0';
+}
+</script>
+</body>
+</html>
