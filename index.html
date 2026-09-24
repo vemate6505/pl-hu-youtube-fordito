@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>PL → HU YouTube Fordító v0.4</title>
+  <title>PL → HU YouTube Fordító v0.5</title>
   <style>
     :root{color-scheme:dark;--bg:#0b0d10;--card:#171a20;--line:#343943;--muted:#b9bec8;--green:#2f8b66;--red:#ff747d}
     *{box-sizing:border-box} body{margin:0;background:var(--bg);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
@@ -18,11 +18,11 @@
   </style>
 </head>
 <body><main>
-  <h1>🇵🇱 → 🇭🇺 YouTube<br>Fordító <small style="font-size:.45em">v0.4</small></h1>
+  <h1>🇵🇱 → 🇭🇺 YouTube<br>Fordító <small style="font-size:.45em">v0.5</small></h1>
   <section class="card">
     <input id="url" value="https://youtu.be/RWKjvaV_rv4" aria-label="YouTube URL">
     <button id="load">Videó betöltése</button>
-    <p class="note">v0.4: a működő HTTPS lejátszó mellett a javított lengyel transcript-végpontot teszteljük.</p>
+    <p class="note">v0.5: automatizált tesztelés és biztonságos kiadási folyamat a működő lengyel transcript-végponthoz.</p>
   </section>
 
   <div class="player">
@@ -37,51 +37,4 @@
     <pre id="out">A lengyel transcript eredménye itt jelenik meg.</pre>
   </section>
 </main>
-<script>
-  let videoId = "RWKjvaV_rv4";
-  const $ = id => document.getElementById(id);
-
-  function getId(v){
-    v=(v||"").trim();
-    if(/^[\w-]{11}$/.test(v)) return v;
-    try{
-      const u=new URL(v);
-      if(u.hostname.includes("youtu.be")) return u.pathname.split("/").filter(Boolean)[0];
-      if(u.searchParams.get("v")) return u.searchParams.get("v");
-      const p=u.pathname.split("/").filter(Boolean);
-      const i=p.findIndex(x=>["embed","shorts","live"].includes(x));
-      if(i>=0 && p[i+1]) return p[i+1];
-    }catch(e){}
-    return null;
-  }
-
-  $("load").onclick=()=>{
-    const id=getId($("url").value);
-    if(!id){ $("status").className="status err"; $("status").textContent="✗ Nem sikerült felismerni a YouTube videóazonosítót."; return; }
-    videoId=id;
-    $("player").src=`https://www.youtube.com/embed/${id}?playsinline=1&rel=0`;
-    $("status").className="status note";
-    $("status").textContent="Videó betöltve. Indítható a lengyel feliratteszt.";
-  };
-
-  $("test").onclick=async()=>{
-    const id=getId($("url").value)||videoId;
-    const endpoint=`https://youtube-transcript.ai/transcript/${encodeURIComponent(id)}.txt?lang=pl`;
-    $("status").className="status note";
-    $("status").textContent="⏳ Lengyel transcript lekérése…";
-    $("out").textContent=`Lekérés: ${endpoint}`;
-    try{
-      const r=await fetch(endpoint,{headers:{"Accept":"text/plain"}});
-      const text=await r.text();
-      if(!r.ok) throw new Error(`HTTP ${r.status} ${r.statusText}\n${text.slice(0,1000)}`);
-      if(!text.trim()) throw new Error("A szolgáltatás üres választ adott.");
-      $("status").className="status ok";
-      $("status").textContent="✓ Transcript válasz megérkezett. Nézd meg lent a lengyel szöveget/időbélyegeket.";
-      $("out").textContent=text;
-    }catch(e){
-      $("status").className="status err";
-      $("status").textContent="✗ A transcript lekérése nem sikerült. A videó ettől továbbra is működik.";
-      $("out").textContent=String(e && (e.stack||e.message) || e);
-    }
-  };
-</script></body></html>
+<script src="app.js"></script></body></html>
