@@ -74,7 +74,7 @@
     function createPlayer(videoId) {
       currentVideoId = videoId;
       if (player?.loadVideoById) { player.loadVideoById(videoId); return; }
-      const build = () => { player = new win.YT.Player("player", { videoId, playerVars: { playsinline: 1, rel: 0, cc_load_policy: 0 }, events: { onReady: beginSync } }); };
+      const build = () => { player = new win.YT.Player("player", { videoId, playerVars: { playsinline: 1, rel: 0, fs: 0, cc_load_policy: 0 }, events: { onReady: beginSync, onStateChange: beginSync } }); };
       if (win.YT?.Player) build();
       else {
         win.onYouTubeIframeAPIReady = build;
@@ -88,7 +88,10 @@
       ticker = setInterval(() => {
         const now = player?.getCurrentTime?.() || 0;
         const line = subtitles.find(item => now >= item.start && now < item.end);
-        byId("overlay").textContent = line?.hu || (subtitles.length ? "" : "A magyar felirat indításra vár.");
+        const waiting = subtitles.length && now < subtitles[0].start ? `A magyar felirat ${Math.floor(subtitles[0].start / 60)}:${String(Math.floor(subtitles[0].start % 60)).padStart(2, "0")}-nél indul.` : "";
+        const caption = line?.hu || waiting || (subtitles.length ? "" : "A magyar felirat indításra vár.");
+        byId("overlay").textContent = caption;
+        byId("liveCaption").textContent = caption;
       }, 250);
     }
     async function buildHungarianSubtitles() {
@@ -110,7 +113,7 @@
           subtitles = subtitles.flatMap(row => expandSubtitle(row));
           win.localStorage?.setItem(`plhu-v061-${id}`, JSON.stringify(subtitles));
         }
-        byId("status").className = "status ok"; byId("status").textContent = `✓ Magyar felirat kész: ${subtitles.length} időzített blokk. Indítsd el a videót.`;
+        byId("status").className = "status ok"; byId("status").textContent = `✓ Magyar felirat kész: ${subtitles.length} időzített blokk. Indítsd el a videót; az első szöveg 0:09-nél jelenik meg.`;
         byId("out").textContent = subtitles.map(s => `[${Math.floor(s.start / 60)}:${String(s.start % 60).padStart(2, "0")}] ${s.hu}`).join("\n\n"); beginSync();
       } catch (error) {
         byId("status").className = "status err"; byId("status").textContent = "✗ A magyar felirat elkészítése nem sikerült."; byId("out").textContent = String(error?.message || error);
@@ -119,7 +122,7 @@
     byId("load").onclick = () => {
       const id = getVideoId(byId("url").value);
       if (!id) { byId("status").className = "status err"; byId("status").textContent = "✗ Érvénytelen YouTube-hivatkozás."; return; }
-      subtitles = []; byId("overlay").textContent = "A magyar felirat indításra vár."; createPlayer(id);
+      subtitles = []; byId("overlay").textContent = "A magyar felirat indításra vár."; byId("liveCaption").textContent = "A magyar felirat indításra vár."; createPlayer(id);
       byId("status").className = "status note"; byId("status").textContent = "Videó betöltve. Nyomd meg a magyar felirat gombot.";
     };
     byId("translate").onclick = buildHungarianSubtitles;
