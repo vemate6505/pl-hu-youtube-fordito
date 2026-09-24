@@ -5,7 +5,7 @@
 })(typeof window !== "undefined" ? window : globalThis, function () {
   "use strict";
   const DEFAULT_VIDEO_ID = "RWKjvaV_rv4";
-  const TRANSLATE_ENDPOINT = "https://api.mymemory.translated.net/get";
+  const TRANSLATE_ENDPOINT = "https://translate.googleapis.com/translate_a/single";
   function getVideoId(value) {
     const input = (value || "").trim();
     if (/^[\w-]{11}$/.test(input)) return input;
@@ -36,7 +36,7 @@
     return matches.map((match, index) => ({
       start: timestampToSeconds(match[1]),
       end: index + 1 < matches.length ? timestampToSeconds(matches[index + 1][1]) : timestampToSeconds(match[1]) + 12,
-      pl: collapseRepeats(match[2].replace(/\[Muzyka\]/g, "[Zene]").replace(/\[Aplauz\]/g, "[Taps]").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim())
+      pl: collapseRepeats(match[2].replace(/\[Muzyka\]/g, "[Zene]").replace(/\[Aplauz\]/g, "[Taps]").replace(/\[[^\]]*__[^\]]*\]/g, "").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim())
     }));
   }
   function splitText(text, limit = 430) {
@@ -51,15 +51,24 @@
   async function translateText(text, fetchFn) {
     const translated = [];
     for (const chunk of splitText(text)) {
-      const url = `${TRANSLATE_ENDPOINT}?q=${encodeURIComponent(chunk)}&langpair=pl%7Chu`;
-      const response = await fetchFn(url, { headers: { Accept: "application/json" } });
-      const data = await response.json();
-      if (!response.ok || data.responseStatus !== 200 || !data.responseData?.translatedText) throw new Error(data.responseDetails || `Fordítási HTTP ${response.status}`);
-      translated.push(data.responseData.translatedText);
+      let value = "";
+      try {
+        const url = `${TRANSLATE_ENDPOINT}?client=gtx&sl=pl&tl=hu&dt=t&q=${encodeURIComponent(chunk)}`;
+        const response = await fetchFn(url, { headers: { Accept: "application/json" } });
+        const data = await response.json();
+        value = Array.isArray(data?.[0]) ? data[0].map(part => part?.[0] || "").join("") : "";
+      } catch (_) {}
+      if (!value) {
+        const fallback = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=pl%7Chu`;
+        const response = await fetchFn(fallback, { headers: { Accept: "application/json" } });
+        const data = await response.json(); value = data.responseData?.translatedText || "";
+      }
+      if (!value) throw new Error("A fordítószolgáltatás nem adott választ.");
+      translated.push(value);
     }
     return translated.join(" ");
   }
-  function expandSubtitle(row, seconds = 7) {
+  function expandSubtitle(row, seconds = 4) {
     const count = Math.max(1, Math.ceil((row.end - row.start) / seconds));
     const words = row.hu.split(/\s+/); const per = Math.ceil(words.length / count); const result = [];
     for (let i = 0; i < count; i += 1) {
@@ -98,7 +107,7 @@
       const id = getVideoId(byId("url").value) || currentVideoId;
       byId("status").className = "status note"; byId("status").textContent = "⏳ Lengyel felirat letöltése…"; byId("translate").disabled = true;
       try {
-        const cached = win.localStorage?.getItem(`plhu-v061-${id}`);
+        const cached = win.localStorage?.getItem(`plhu-v07-${id}`);
         if (cached) subtitles = JSON.parse(cached);
         else {
           const response = await fetchFn(transcriptEndpoint(id), { headers: { Accept: "text/plain" } });
@@ -111,7 +120,7 @@
             subtitles[i].hu = await translateText(subtitles[i].pl, fetchFn);
           }
           subtitles = subtitles.flatMap(row => expandSubtitle(row));
-          win.localStorage?.setItem(`plhu-v061-${id}`, JSON.stringify(subtitles));
+          win.localStorage?.setItem(`plhu-v07-${id}`, JSON.stringify(subtitles));
         }
         byId("status").className = "status ok"; byId("status").textContent = `✓ Magyar felirat kész: ${subtitles.length} időzített blokk. Indítsd el a videót; az első szöveg 0:09-nél jelenik meg.`;
         byId("out").textContent = subtitles.map(s => `[${Math.floor(s.start / 60)}:${String(s.start % 60).padStart(2, "0")}] ${s.hu}`).join("\n\n"); beginSync();
@@ -126,6 +135,15 @@
       byId("status").className = "status note"; byId("status").textContent = "Videó betöltve. Nyomd meg a magyar felirat gombot.";
     };
     byId("translate").onclick = buildHungarianSubtitles;
+    byId("fullscreen").onclick = async () => {
+      const shell = byId("playerShell");
+      try {
+        if (!document.fullscreenElement) {
+          await shell.requestFullscreen();
+          await win.screen?.orientation?.lock?.("landscape");
+        } else await document.exitFullscreen();
+      } catch (_) { byId("status").textContent = "A telefon nem engedte az automatikus elfordítást; fordítsd el kézzel."; }
+    };
     createPlayer(DEFAULT_VIDEO_ID);
   }
   return { DEFAULT_VIDEO_ID, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, splitText, translateText, expandSubtitle, start };

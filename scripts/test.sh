@@ -8,8 +8,9 @@ node --check app.js
 node --test test/*.test.js
 
 grep -q '<script src="app.js"></script>' index.html
-grep -q 'YouTube Fordító v0.6.2' index.html
+grep -q 'YouTube Fordító v0.7' index.html
 grep -q 'id="liveCaption"' index.html
+grep -q 'id="fullscreen"' index.html
 
 if grep -RInE --include='*.js' --include='*.html' --include='*.json' \
   '(api[_-]?key|token|secret|password)[[:space:]]*[:=]' .; then

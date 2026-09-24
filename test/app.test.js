@@ -13,7 +13,7 @@ test("parses timed transcript blocks", () => {
 });
 test("splits text below the service limit", () => { const chunks = splitText("szkoła ".repeat(200).trim(), 100); assert.ok(chunks.length > 1); assert.ok(chunks.every(chunk => chunk.length <= 100)); });
 test("translates Polish text", async () => {
-  const fakeFetch = async () => ({ ok: true, json: async () => ({ responseStatus: 200, responseData: { translatedText: "Jó napot" } }) });
+  const fakeFetch = async () => ({ ok: true, json: async () => [[['Jó napot', 'Dzień dobry']]] });
   assert.equal(await translateText("Dzień dobry", fakeFetch), "Jó napot");
 });
 test("removes repeated phrases and creates short timed captions", () => {
