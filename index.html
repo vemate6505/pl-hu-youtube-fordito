@@ -3,71 +3,77 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>PL → HU YouTube Fordító v0.2</title>
+<title>PL → HU YouTube Fordító v0.3</title>
 <style>
-:root{color-scheme:dark}
-*{box-sizing:border-box}
-body{margin:0;background:#0d0f13;color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-.wrap{max-width:920px;margin:auto;padding:20px}
-.title{font-size:clamp(30px,7vw,54px);font-weight:850;line-height:1.05;margin:20px 0 26px}
-.card{background:#171a20;border:1px solid #343841;border-radius:22px;padding:18px;margin-bottom:18px}
-.row{display:flex;gap:10px;flex-wrap:wrap}
-input{flex:1;min-width:220px;padding:15px;border-radius:14px;border:1px solid #444;background:#0f1116;color:#fff;font-size:17px}
-button{padding:15px 20px;border:0;border-radius:14px;font-weight:800;font-size:16px;cursor:pointer}
-.video{position:relative;aspect-ratio:16/9;background:#000;border-radius:20px;overflow:hidden}
-.video iframe{width:100%;height:100%;border:0}
-.sub{position:absolute;left:5%;right:5%;bottom:7%;text-align:center;font-weight:850;font-size:clamp(20px,5vw,38px);line-height:1.18;text-shadow:0 2px 8px #000;background:rgba(0,0,0,.72);padding:10px 14px;border-radius:14px;pointer-events:none}
-.status{color:#b9bec9;line-height:1.45}
-.ok{color:#72e6a5;font-weight:750}
+:root{color-scheme:dark;--bg:#0d0f12;--card:#181b21;--line:#343943;--text:#f4f5f7;--muted:#b9bec8;--green:#66e6a3;--red:#ff7373}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:760px;margin:auto;padding:22px 18px 50px} h1{font-size:34px;line-height:1.05;margin:0 0 24px} small{font-size:.48em;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:28px;padding:22px;margin:0 0 20px}
+input,button{font:inherit;border-radius:18px} input{width:100%;padding:17px;background:#101217;border:1px solid #414650;color:white;font-size:18px}
+button{margin-top:14px;padding:15px 20px;border:0;background:#777;color:#fff;font-weight:800;font-size:17px}
+button.secondary{background:#2c7a57} .muted{color:var(--muted);line-height:1.55}
+.player{position:relative;aspect-ratio:16/9;overflow:hidden;border-radius:25px;background:#000;margin-bottom:20px}
+iframe{width:100%;height:100%;border:0}.overlay{position:absolute;left:4%;right:4%;bottom:8%;text-align:center;font-size:clamp(22px,5vw,38px);font-weight:900;text-shadow:0 2px 6px #000;background:#0009;border-radius:12px;padding:6px 10px;pointer-events:none}
+.good{color:var(--green)}.bad{color:var(--red)}pre{white-space:pre-wrap;word-break:break-word;background:#101217;padding:14px;border-radius:14px;max-height:300px;overflow:auto;font-size:13px}
 </style>
 </head>
-<body>
-<main class="wrap">
-<div class="title">🇵🇱 → 🇭🇺 YouTube Fordító <span style="font-size:.5em;color:#aaa">v0.2</span></div>
-
+<body><main>
+<h1>🇵🇱 → 🇭🇺 YouTube<br>Fordító <small>v0.3</small></h1>
 <section class="card">
-<div class="row">
 <input id="url" value="https://youtu.be/RWKjvaV_rv4" aria-label="YouTube URL">
-<button onclick="loadVideo()">Videó betöltése</button>
+<button id="load">Videó betöltése</button>
+<p class="muted">v0.3: a működő HTTPS lejátszó mellé lengyel transcript-diagnosztikát tesztelünk.</p>
+</section>
+<div class="player">
+<iframe id="yt" src="https://www.youtube.com/embed/RWKjvaV_rv4?playsinline=1&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+<div class="overlay" id="overlay">Magyar fordítás itt fog megjelenni.</div>
 </div>
-<p class="status">HTTPS-es mobilteszt. A v0.2 célja a YouTube beágyazott lejátszó stabil működésének ellenőrzése.</p>
-</section>
-
-<section class="video">
-<iframe id="player"
-src="https://www.youtube.com/embed/RWKjvaV_rv4?playsinline=1&rel=0"
-title="YouTube videó"
-allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-allowfullscreen
-referrerpolicy="strict-origin-when-cross-origin"></iframe>
-<div class="sub">Magyar fordítás itt fog megjelenni.</div>
-</section>
-
 <section class="card">
-<div class="ok">v0.2 teszt</div>
-<p class="status">Ha a videó itt már elindul, a következő lépés a lengyel felirat időzített feldolgozása és a magyar fordítás rákapcsolása.</p>
+<h2>🇵🇱 Feliratmotor teszt</h2>
+<button class="secondary" id="test">Lengyel felirat tesztelése</button>
+<p id="status" class="muted">Még nem futott teszt.</p>
+<pre id="out">A válasz első része itt jelenik meg.</pre>
 </section>
 </main>
-
 <script>
-function videoId(v){
-  try{
-    const u=new URL(v.trim());
-    if(u.hostname.includes('youtu.be')) return u.pathname.slice(1).split('/')[0];
-    if(u.searchParams.get('v')) return u.searchParams.get('v');
-    const m=u.pathname.match(/\/(?:embed|shorts)\/([^/?]+)/);
-    return m ? m[1] : '';
-  }catch(e){
-    const m=v.trim().match(/^[\w-]{11}$/);
-    return m ? m[0] : '';
-  }
+const $=id=>document.getElementById(id);
+function videoId(s){
+ s=(s||'').trim();
+ if(/^[\w-]{11}$/.test(s)) return s;
+ try{
+   const u=new URL(s);
+   if(u.hostname.includes('youtu.be')) return u.pathname.split('/').filter(Boolean)[0];
+   if(u.searchParams.get('v')) return u.searchParams.get('v');
+   const p=u.pathname.split('/').filter(Boolean);
+   const i=p.findIndex(x=>['embed','shorts','live'].includes(x));
+   if(i>=0&&p[i+1]) return p[i+1];
+ }catch(e){}
+ return null;
 }
-function loadVideo(){
-  const id=videoId(document.getElementById('url').value);
-  if(!id){ alert('Nem sikerült felismerni a YouTube-linket.'); return; }
-  document.getElementById('player').src=
-    'https://www.youtube.com/embed/'+encodeURIComponent(id)+'?playsinline=1&rel=0';
-}
+$('load').onclick=()=>{
+ const id=videoId($('url').value);
+ if(!id){$('status').innerHTML='<span class="bad">Nem ismertem fel a YouTube-linket.</span>';return}
+ $('yt').src=`https://www.youtube.com/embed/${id}?playsinline=1&rel=0`;
+};
+$('test').onclick=async()=>{
+ const id=videoId($('url').value);
+ if(!id){$('status').innerHTML='<span class="bad">Hibás YouTube-link.</span>';return}
+ $('status').textContent='Lengyel transcript lekérése…';
+ $('out').textContent='Várakozás…';
+ // Prototype-only diagnostic endpoint. If its public API changes/fails,
+ // the error is shown instead of breaking the YouTube player.
+ const endpoint=`https://youtube-transcript.ai/api/transcript?videoId=${encodeURIComponent(id)}&lang=pl`;
+ try{
+   const r=await fetch(endpoint,{headers:{'Accept':'application/json'}});
+   const raw=await r.text();
+   if(!r.ok) throw new Error(`HTTP ${r.status}: ${raw.slice(0,500)}`);
+   let data; try{data=JSON.parse(raw)}catch{data=raw}
+   $('status').innerHTML='<span class="good">✓ A transcript-végpont válaszolt.</span> Nézd meg lent, kaptunk-e valódi lengyel, időzített feliratot.';
+   $('out').textContent=typeof data==='string'?data.slice(0,5000):JSON.stringify(data,null,2).slice(0,5000);
+ }catch(e){
+   $('status').innerHTML='<span class="bad">✗ A transcript lekérése nem sikerült.</span> A videó ettől továbbra is működik.';
+   $('out').textContent=String(e);
+ }
+};
 </script>
-</body>
-</html>
+</body></html>
