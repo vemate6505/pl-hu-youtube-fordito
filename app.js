@@ -21,12 +21,22 @@
   }
   const transcriptEndpoint = videoId => `https://youtube-transcript.ai/transcript/${encodeURIComponent(videoId)}.txt?lang=pl`;
   const timestampToSeconds = stamp => stamp.split(":").reduce((sum, part) => sum * 60 + Number(part), 0);
+  function collapseRepeats(text) {
+    const words = text.split(/\s+/).filter(Boolean);
+    for (let i = 0; i < words.length; i += 1) {
+      for (let size = Math.min(45, Math.floor((words.length - i) / 2)); size >= 3; size -= 1) {
+        const a = words.slice(i, i + size).join(" "), b = words.slice(i + size, i + size * 2).join(" ");
+        if (a === b) { words.splice(i + size, size); i = Math.max(-1, i - 1); break; }
+      }
+    }
+    return words.join(" ");
+  }
   function parseTranscript(text) {
     const matches = [...text.matchAll(/^\[(\d{1,2}:\d{2}(?::\d{2})?)\]\s+(.+)$/gm)];
     return matches.map((match, index) => ({
       start: timestampToSeconds(match[1]),
       end: index + 1 < matches.length ? timestampToSeconds(matches[index + 1][1]) : timestampToSeconds(match[1]) + 12,
-      pl: match[2].replace(/\[Muzyka\]/g, "[Zene]").replace(/\[Aplauz\]/g, "[Taps]").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim()
+      pl: collapseRepeats(match[2].replace(/\[Muzyka\]/g, "[Zene]").replace(/\[Aplauz\]/g, "[Taps]").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim())
     }));
   }
   function splitText(text, limit = 430) {
@@ -48,6 +58,15 @@
       translated.push(data.responseData.translatedText);
     }
     return translated.join(" ");
+  }
+  function expandSubtitle(row, seconds = 7) {
+    const count = Math.max(1, Math.ceil((row.end - row.start) / seconds));
+    const words = row.hu.split(/\s+/); const per = Math.ceil(words.length / count); const result = [];
+    for (let i = 0; i < count; i += 1) {
+      const hu = words.slice(i * per, (i + 1) * per).join(" ").trim();
+      if (hu) result.push({ start: row.start + i * (row.end - row.start) / count, end: row.start + (i + 1) * (row.end - row.start) / count, hu });
+    }
+    return result;
   }
   function start(win, document, fetchFn) {
     const byId = id => document.getElementById(id);
@@ -76,7 +95,7 @@
       const id = getVideoId(byId("url").value) || currentVideoId;
       byId("status").className = "status note"; byId("status").textContent = "⏳ Lengyel felirat letöltése…"; byId("translate").disabled = true;
       try {
-        const cached = win.localStorage?.getItem(`plhu-v06-${id}`);
+        const cached = win.localStorage?.getItem(`plhu-v061-${id}`);
         if (cached) subtitles = JSON.parse(cached);
         else {
           const response = await fetchFn(transcriptEndpoint(id), { headers: { Accept: "text/plain" } });
@@ -88,7 +107,8 @@
             byId("status").textContent = `⏳ Magyar fordítás: ${i + 1}/${subtitles.length}`;
             subtitles[i].hu = await translateText(subtitles[i].pl, fetchFn);
           }
-          win.localStorage?.setItem(`plhu-v06-${id}`, JSON.stringify(subtitles));
+          subtitles = subtitles.flatMap(row => expandSubtitle(row));
+          win.localStorage?.setItem(`plhu-v061-${id}`, JSON.stringify(subtitles));
         }
         byId("status").className = "status ok"; byId("status").textContent = `✓ Magyar felirat kész: ${subtitles.length} időzített blokk. Indítsd el a videót.`;
         byId("out").textContent = subtitles.map(s => `[${Math.floor(s.start / 60)}:${String(s.start % 60).padStart(2, "0")}] ${s.hu}`).join("\n\n"); beginSync();
@@ -105,5 +125,5 @@
     byId("translate").onclick = buildHungarianSubtitles;
     createPlayer(DEFAULT_VIDEO_ID);
   }
-  return { DEFAULT_VIDEO_ID, getVideoId, transcriptEndpoint, timestampToSeconds, parseTranscript, splitText, translateText, start };
+  return { DEFAULT_VIDEO_ID, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, splitText, translateText, expandSubtitle, start };
 });

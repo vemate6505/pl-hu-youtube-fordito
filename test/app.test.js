@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { DEFAULT_VIDEO_ID, getVideoId, transcriptEndpoint, timestampToSeconds, parseTranscript, splitText, translateText } = require("../app.js");
+const { DEFAULT_VIDEO_ID, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, splitText, translateText, expandSubtitle } = require("../app.js");
 test("recognizes YouTube URLs and rejects foreign hosts", () => {
   const id = DEFAULT_VIDEO_ID;
   for (const url of [id, `https://youtu.be/${id}`, `https://www.youtube.com/watch?v=${id}`, `https://www.youtube.com/embed/${id}`, `https://www.youtube.com/shorts/${id}`, `https://www.youtube.com/live/${id}`]) assert.equal(getVideoId(url), id);
@@ -15,4 +15,9 @@ test("splits text below the service limit", () => { const chunks = splitText("sz
 test("translates Polish text", async () => {
   const fakeFetch = async () => ({ ok: true, json: async () => ({ responseStatus: 200, responseData: { translatedText: "Jó napot" } }) });
   assert.equal(await translateText("Dzień dobry", fakeFetch), "Jó napot");
+});
+test("removes repeated phrases and creates short timed captions", () => {
+  assert.equal(collapseRepeats("ala ma kota ala ma kota koniec"), "ala ma kota koniec");
+  const rows = expandSubtitle({ start: 0, end: 20, hu: "egy kettő három négy öt hat hét nyolc kilenc" }, 7);
+  assert.equal(rows.length, 3); assert.equal(rows.at(-1).end, 20); assert.ok(rows.every(row => row.hu));
 });
