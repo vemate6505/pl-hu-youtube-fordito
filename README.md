@@ -1,6 +1,6 @@
 # MORDO-PLHU
 
-Lengyel YouTube-felirat magyar fordításának böngészős prototípusa.
+Lengyel YouTube-felirat automatikus magyar fordításának és időzített videós megjelenítésének böngészős prototípusa (v0.6).
 
 ## Automatizált folyamat
 
