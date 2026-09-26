@@ -64,9 +64,34 @@
         const data = await response.json(); value = data.responseData?.translatedText || "";
       }
       if (!value) throw new Error("A fordítószolgáltatás nem adott választ.");
-      translated.push(value);
+      translated.push(normalizeHungarian(value));
     }
     return translated.join(" ");
+  }
+  function normalizeHungarian(text) {
+    let value = String(text || "").replace(/\s+/g, " ").trim();
+    if (!value) return "";
+    value = value.replace(/\s+([,.!?;:])/g, "$1").replace(/([,.!?;:])(?=[^\s"')\]])/g, "$1 ");
+    value = value.replace(/\bi\b/g, "én");
+    value = value.charAt(0).toLocaleUpperCase("hu-HU") + value.slice(1);
+    if (!/[.!?…]$/.test(value) && value.length > 3) value += ".";
+    return value;
+  }
+  function splitCaptionText(text, maxChars = 76) {
+    const clean = normalizeHungarian(text);
+    if (!clean) return [];
+    const sentences = clean.match(/[^.!?…]+[.!?…]+|[^.!?…]+$/g) || [clean];
+    const chunks = [];
+    for (const sentence of sentences) {
+      const words = sentence.trim().split(/\s+/); let current = "";
+      for (const word of words) {
+        if (current && (current + " " + word).length > maxChars) {
+          chunks.push(current.trim()); current = word;
+        } else current += (current ? " " : "") + word;
+      }
+      if (current.trim()) chunks.push(current.trim());
+    }
+    return chunks;
   }
   function findSubtitleAt(subtitles, time) {
     let lo = 0, hi = subtitles.length - 1;
@@ -78,14 +103,17 @@
     }
     return null;
   }
-  function expandSubtitle(row, seconds = 3.2) {
-    const count = Math.max(1, Math.ceil((row.end - row.start) / seconds));
-    const words = row.hu.split(/\s+/); const per = Math.ceil(words.length / count); const result = [];
-    for (let i = 0; i < count; i += 1) {
-      const hu = words.slice(i * per, (i + 1) * per).join(" ").trim();
-      if (hu) result.push({ start: row.start + i * (row.end - row.start) / count, end: row.start + (i + 1) * (row.end - row.start) / count, hu });
-    }
-    return result;
+  function expandSubtitle(row, seconds = 4.2) {
+    const parts = splitCaptionText(row.hu);
+    if (!parts.length) return [];
+    const duration = Math.max(0.8, row.end - row.start);
+    const weights = parts.map(part => Math.max(1, part.length));
+    const total = weights.reduce((sum, value) => sum + value, 0);
+    let cursor = row.start;
+    return parts.map((hu, index) => {
+      const end = index === parts.length - 1 ? row.end : cursor + duration * weights[index] / total;
+      const item = { start: cursor, end, hu }; cursor = end; return item;
+    });
   }
   function start(win, document, fetchFn) {
     const byId = id => document.getElementById(id);
@@ -125,7 +153,7 @@
       const id = getVideoId(byId("url").value) || currentVideoId;
       byId("status").className = "status note"; byId("status").textContent = "⏳ Lengyel felirat letöltése…"; byId("translate").disabled = true;
       try {
-        const cached = win.localStorage?.getItem(`plhu-v08-${id}`);
+        const cached = win.localStorage?.getItem(`plhu-v09-${id}`);
         if (cached) subtitles = JSON.parse(cached);
         else {
           const response = await fetchFn(transcriptEndpoint(id), { headers: { Accept: "text/plain" } });
@@ -138,7 +166,7 @@
             subtitles[i].hu = await translateText(subtitles[i].pl, fetchFn);
           }
           subtitles = subtitles.flatMap(row => expandSubtitle(row));
-          win.localStorage?.setItem(`plhu-v08-${id}`, JSON.stringify(subtitles));
+          win.localStorage?.setItem(`plhu-v09-${id}`, JSON.stringify(subtitles));
         }
         byId("status").className = "status ok"; byId("status").textContent = `✓ Magyar felirat kész: ${subtitles.length} időzített blokk. Indítsd el a videót; az első szöveg 0:09-nél jelenik meg.`;
         byId("out").textContent = subtitles.map(s => `[${Math.floor(s.start / 60)}:${String(s.start % 60).padStart(2, "0")}] ${s.hu}`).join("\n\n"); beginSync();
@@ -167,5 +195,5 @@
     };
     createPlayer(DEFAULT_VIDEO_ID);
   }
-  return { DEFAULT_VIDEO_ID, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, splitText, translateText, findSubtitleAt, expandSubtitle, start };
+  return { DEFAULT_VIDEO_ID, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, splitText, translateText, normalizeHungarian, splitCaptionText, findSubtitleAt, expandSubtitle, start };
 });
