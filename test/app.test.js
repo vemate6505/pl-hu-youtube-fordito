@@ -34,6 +34,7 @@ test("finds the active subtitle efficiently", () => {
 
 test("normalizes Hungarian punctuation and capitalization", () => {
   assert.equal(normalizeHungarian("  jó napot , hogy van  "), "Jó napot, hogy van.");
+  assert.equal(normalizeHungarian("i"), "I");
 });
 test("splits Hungarian captions without cutting words", () => {
   const parts = splitCaptionText("Ez az első mondat. Ez a második mondat, amely valamivel hosszabb.", 30);
