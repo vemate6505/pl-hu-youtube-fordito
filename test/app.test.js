@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { DEFAULT_VIDEO_ID, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, splitText, translateText, expandSubtitle } = require("../app.js");
+const { DEFAULT_VIDEO_ID, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, splitText, translateText, findSubtitleAt, expandSubtitle } = require("../app.js");
 test("recognizes YouTube URLs and rejects foreign hosts", () => {
   const id = DEFAULT_VIDEO_ID;
   for (const url of [id, `https://youtu.be/${id}`, `https://www.youtube.com/watch?v=${id}`, `https://www.youtube.com/embed/${id}`, `https://www.youtube.com/shorts/${id}`, `https://www.youtube.com/live/${id}`]) assert.equal(getVideoId(url), id);
@@ -21,3 +21,5 @@ test("removes repeated phrases and creates short timed captions", () => {
   const rows = expandSubtitle({ start: 0, end: 20, hu: "egy kettő három négy öt hat hét nyolc kilenc" }, 7);
   assert.equal(rows.length, 3); assert.equal(rows.at(-1).end, 20); assert.ok(rows.every(row => row.hu));
 });
+
+test("finds the active subtitle efficiently", () => {\n  const rows = [{ start: 1, end: 3, hu: "a" }, { start: 3, end: 6, hu: "b" }];\n  assert.equal(findSubtitleAt(rows, 4).hu, "b");\n  assert.equal(findSubtitleAt(rows, 0.5), null);\n  assert.equal(findSubtitleAt(rows, 6), null);\n});\n
