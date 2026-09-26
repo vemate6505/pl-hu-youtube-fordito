@@ -7,7 +7,7 @@ cd "$project_dir"
 node --check app.js
 node --test test/*.test.js
 
-grep -q '<script src="app.js"></script>' index.html
+grep -q '<script src="app.js?v=0.12.1"></script>' index.html
 grep -q 'YouTube Fordító v0.12.1' index.html
 grep -q 'id="liveCaption"' index.html
 grep -q 'id="fullscreen"' index.html
