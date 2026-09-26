@@ -8,7 +8,7 @@ node --check app.js
 node --test test/*.test.js
 
 grep -q '<script src="app.js"></script>' index.html
-grep -q 'YouTube Fordító v0.7' index.html
+grep -q 'YouTube Fordító v0.9' index.html
 grep -q 'id="liveCaption"' index.html
 grep -q 'id="fullscreen"' index.html
 
