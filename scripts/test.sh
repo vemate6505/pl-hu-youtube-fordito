@@ -8,7 +8,7 @@ node --check app.js
 node --test test/*.test.js
 
 grep -q '<script src="app.js?v=0.12.1"></script>' index.html
-grep -q 'YouTube Fordító v0.16' index.html
+grep -q 'YouTube Fordító v0.17' index.html
 grep -q 'id="liveCaption"' index.html
 grep -q 'id="fullscreen"' index.html
 grep -q 'id="playerShell" class="player"' index.html
@@ -36,3 +36,7 @@ grep -q 'buildHungarianSubtitles(DEFAULT_VIDEO_ID)' app.js
 grep -q 'buildHungarianSubtitles(id)' app.js
 
 grep -q 'mergeTranscriptRows(parseTranscript(text))' app.js
+
+grep -q 'translateViaGoogle(text, "pl", "en"' app.js
+grep -q 'translateViaGoogle(english, "en", "hu"' app.js
+grep -q 'maxDuration = 12, maxChars = 300' app.js
