@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { DEFAULT_VIDEO_ID, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, splitText, translateText, translateRowsWithContext, normalizeHungarian, splitCaptionText, findSubtitleAt, expandSubtitle } = require("../app.js");
+const { DEFAULT_VIDEO_ID, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, splitText, translateText, translateRowsWithContext, stripNonSpeechMarkers, normalizeHungarian, splitCaptionText, findSubtitleAt, expandSubtitle } = require("../app.js");
 test("recognizes YouTube URLs and rejects foreign hosts", () => {
   const id = DEFAULT_VIDEO_ID;
   for (const url of [id, `https://youtu.be/${id}`, `https://www.youtube.com/watch?v=${id}`, `https://www.youtube.com/embed/${id}`, `https://www.youtube.com/shorts/${id}`, `https://www.youtube.com/live/${id}`]) assert.equal(getVideoId(url), id);
@@ -71,4 +71,10 @@ test("removes non-speech music laughter and applause markers", () => {
   const rows = parseTranscript(input);
   assert.equal(rows[0].pl, "Cześć");
   assert.equal(rows[1].pl, "Dzień dobry");
+});
+
+
+test("removes translated non-speech markers after translation", () => {
+  assert.equal(stripNonSpeechMarkers("(Zene) Helló. (Nevetés) [Taps]"), "Helló.");
+  assert.equal(normalizeHungarian("(zene) (zene) Jó reggelt (nevetés)"), "Jó reggelt.");
 });
