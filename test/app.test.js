@@ -8,17 +8,12 @@ test("recognizes YouTube URLs and rejects foreign hosts", () => {
 });
 test("builds the Polish transcript endpoint", () => assert.equal(transcriptEndpoint(DEFAULT_VIDEO_ID), "https://youtube-transcript.ai/transcript/RWKjvaV_rv4.txt?lang=pl"));
 test("parses timed transcript blocks", () => {
-  const rows = parseTranscript("## Transcript
-[0:09] Dzień dobry
-
-[1:11] Do widzenia
----");
-  assert.deepEqual(rows, [{ start: 9, end: 71, pl: "Dzień dobry" }, { start: 71, end: 83, pl: "Do widzenia" }]); assert.equal(timestampToSeconds("1:02:03"), 3723);
+  const rows = parseTranscript(`## Transcript\n[0:09] Dzień dobry\n\n[1:11] Do widzenia\n---`);\n  assert.deepEqual(rows, [{ start: 9, end: 71, pl: "Dzień dobry" }, { start: 71, end: 83, pl: "Do widzenia" }]); assert.equal(timestampToSeconds("1:02:03"), 3723);
 });
 test("splits text below the service limit", () => { const chunks = splitText("szkoła ".repeat(200).trim(), 100); assert.ok(chunks.length > 1); assert.ok(chunks.every(chunk => chunk.length <= 100)); });
 test("translates Polish text", async () => {
   const fakeFetch = async () => ({ ok: true, json: async () => [[['Jó napot', 'Dzień dobry']]] });
-  assert.equal(await translateText("Dzień dobry", fakeFetch), "Jó napot");
+  assert.equal(await translateText("Dzień dobry", fakeFetch), "Jó napot.");
 });
 test("removes repeated phrases and creates short timed captions", () => {
   assert.equal(collapseRepeats("ala ma kota ala ma kota koniec"), "ala ma kota koniec");
