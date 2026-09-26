@@ -64,3 +64,11 @@ test("keeps short translated rows intact to avoid over-fragmentation", () => {
   assert.equal(rows[0].start, 10);
   assert.equal(rows[0].end, 16);
 });
+
+
+test("removes non-speech music laughter and applause markers", () => {
+  const input = ["[0:01] (Muzyka) [Muzyka] Cześć (śmiech) [Aplauz]", "[0:05] (zene) (nevetés) Dzień dobry"].join("\n");
+  const rows = parseTranscript(input);
+  assert.equal(rows[0].pl, "Cześć");
+  assert.equal(rows[1].pl, "Dzień dobry");
+});
