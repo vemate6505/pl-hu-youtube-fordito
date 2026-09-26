@@ -17,10 +17,12 @@ test("translates Polish text", async () => {
   const fakeFetch = async () => ({ ok: true, json: async () => [[['Jó napot', 'Dzień dobry']]] });
   assert.equal(await translateText("Dzień dobry", fakeFetch), "Jó napot.");
 });
-test("removes repeated phrases and creates short timed captions", () => {
+test("removes repeated phrases and creates sentence-aware timed captions", () => {
   assert.equal(collapseRepeats("ala ma kota ala ma kota koniec"), "ala ma kota koniec");
-  const rows = expandSubtitle({ start: 0, end: 20, hu: "egy kettő három négy öt hat hét nyolc kilenc" }, 7);
-  assert.equal(rows.length, 3); assert.equal(rows.at(-1).end, 20); assert.ok(rows.every(row => row.hu));
+  const rows = expandSubtitle({ start: 0, end: 20, hu: "Ez az első rövid mondat. Ez pedig a második rövid mondat." });
+  assert.equal(rows.length, 2);
+  assert.equal(rows.at(-1).end, 20);
+  assert.ok(rows.every(row => row.hu && row.end > row.start));
 });
 
 test("finds the active subtitle efficiently", () => {
