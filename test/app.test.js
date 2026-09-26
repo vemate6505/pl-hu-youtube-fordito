@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { DEFAULT_VIDEO_ID, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, splitText, translateText, findSubtitleAt, expandSubtitle } = require("../app.js");
+const { DEFAULT_VIDEO_ID, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, splitText, translateText, normalizeHungarian, splitCaptionText, findSubtitleAt, expandSubtitle } = require("../app.js");
 test("recognizes YouTube URLs and rejects foreign hosts", () => {
   const id = DEFAULT_VIDEO_ID;
   for (const url of [id, `https://youtu.be/${id}`, `https://www.youtube.com/watch?v=${id}`, `https://www.youtube.com/embed/${id}`, `https://www.youtube.com/shorts/${id}`, `https://www.youtube.com/live/${id}`]) assert.equal(getVideoId(url), id);
@@ -31,4 +31,13 @@ test("finds the active subtitle efficiently", () => {
   assert.equal(findSubtitleAt(rows, 4).hu, "b");
   assert.equal(findSubtitleAt(rows, 0.5), null);
   assert.equal(findSubtitleAt(rows, 6), null);
+});
+
+test("normalizes Hungarian punctuation and capitalization", () => {
+  assert.equal(normalizeHungarian("  jó napot , hogy van  "), "Jó napot, hogy van.");
+});
+test("splits Hungarian captions without cutting words", () => {
+  const parts = splitCaptionText("Ez az első mondat. Ez a második mondat, amely valamivel hosszabb.", 30);
+  assert.ok(parts.length >= 2);
+  assert.ok(parts.every(part => part.length <= 30 || !part.includes(" ")));
 });
