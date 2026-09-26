@@ -73,10 +73,16 @@
     const output = rows.map(row => ({ ...row }));
     for (let i = 0; i < output.length; i += groupSize) {
       const group = output.slice(i, i + groupSize);
-      const separator = " ||| ";
-      const source = group.map(row => row.pl).join(separator);
+      const source = group.map((row, offset) => `[[PLHU_${offset + 1}]] ${row.pl}`).join(" ");
       const translated = await translateText(source, fetchFn);
-      const parts = translated.split(/\s*\|\|\|\s*/).map(normalizeHungarian);
+      const parts = [];
+      for (let offset = 0; offset < group.length; offset += 1) {
+        const tag = `[[PLHU_${offset + 1}]]`;
+        const nextTag = offset + 1 < group.length ? `[[PLHU_${offset + 2}]]` : null;
+        const start = translated.indexOf(tag);
+        const end = nextTag ? translated.indexOf(nextTag) : translated.length;
+        parts.push(start >= 0 && end > start ? normalizeHungarian(translated.slice(start + tag.length, end)) : "");
+      }
       if (parts.length === group.length && parts.every(Boolean)) {
         parts.forEach((hu, offset) => { output[i + offset].hu = hu; });
       } else {
@@ -174,7 +180,7 @@
       const id = getVideoId(byId("url").value) || currentVideoId;
       byId("status").className = "status note"; byId("status").textContent = "⏳ Lengyel felirat letöltése…"; byId("translate").disabled = true;
       try {
-        const cached = win.localStorage?.getItem(`plhu-v010-${id}`);
+        const cached = win.localStorage?.getItem(`plhu-v0101-${id}`);
         if (cached) subtitles = JSON.parse(cached);
         else {
           const response = await fetchFn(transcriptEndpoint(id), { headers: { Accept: "text/plain" } });
@@ -185,7 +191,7 @@
           byId("status").textContent = "⏳ Kontextusos magyar fordítás készítése…";
           subtitles = await translateRowsWithContext(subtitles, fetchFn);
           subtitles = subtitles.flatMap(row => expandSubtitle(row));
-          win.localStorage?.setItem(`plhu-v010-${id}`, JSON.stringify(subtitles));
+          win.localStorage?.setItem(`plhu-v0101-${id}`, JSON.stringify(subtitles));
         }
         byId("status").className = "status ok"; byId("status").textContent = `✓ Magyar felirat kész: ${subtitles.length} időzített blokk. Indítsd el a videót; az első szöveg 0:09-nél jelenik meg.`;
         byId("out").textContent = subtitles.map(s => `[${Math.floor(s.start / 60)}:${String(s.start % 60).padStart(2, "0")}] ${s.hu}`).join("\n\n"); beginSync();
