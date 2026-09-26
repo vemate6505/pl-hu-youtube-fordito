@@ -215,9 +215,8 @@
       try {
         if (!document.fullscreenElement) {
           await shell.requestFullscreen();
-          await win.screen?.orientation?.lock?.("landscape");
         } else await document.exitFullscreen();
-      } catch (_) { byId("status").textContent = "A telefon nem engedte az automatikus elfordítást; fordítsd el kézzel."; }
+      } catch (_) { byId("status").textContent = "A teljes képernyős módot a böngésző nem engedte."; }
     };
     createPlayer(DEFAULT_VIDEO_ID);
   }
