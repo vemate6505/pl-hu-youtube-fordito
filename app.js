@@ -181,11 +181,11 @@
         byId("liveCaption").textContent = caption;
       }, 250);
     }
-    async function buildHungarianSubtitles() {
-      const id = getVideoId(byId("url").value) || currentVideoId;
+    async function buildHungarianSubtitles(videoId = null) {
+      const id = videoId || getVideoId(byId("url").value) || currentVideoId;
       byId("status").className = "status note"; byId("status").textContent = "⏳ Lengyel felirat letöltése…"; byId("translate").disabled = true;
       try {
-        const cached = win.localStorage?.getItem(`plhu-v014-${id}`);
+        const cached = win.localStorage?.getItem(`plhu-v015-${id}`);
         if (cached) subtitles = JSON.parse(cached);
         else {
           const response = await fetchFn(transcriptEndpoint(id), { headers: { Accept: "text/plain" } });
@@ -196,7 +196,7 @@
           byId("status").textContent = "⏳ Kontextusos magyar fordítás készítése…";
           subtitles = await translateRowsWithContext(subtitles, fetchFn);
           subtitles = subtitles.flatMap(row => expandSubtitle(row));
-          win.localStorage?.setItem(`plhu-v014-${id}`, JSON.stringify(subtitles));
+          win.localStorage?.setItem(`plhu-v015-${id}`, JSON.stringify(subtitles));
         }
         byId("status").className = "status ok"; byId("status").textContent = `✓ Magyar felirat kész: ${subtitles.length} időzített blokk. Indítsd el a videót; az első szöveg 0:09-nél jelenik meg.`;
         byId("out").textContent = subtitles.map(s => `[${Math.floor(s.start / 60)}:${String(s.start % 60).padStart(2, "0")}] ${s.hu}`).join("\n\n"); beginSync();
@@ -209,9 +209,9 @@
       if (!id) { byId("status").className = "status err"; byId("status").textContent = "✗ Érvénytelen YouTube-hivatkozás."; return; }
       subtitles = []; byId("overlay").textContent = "A magyar felirat indításra vár."; byId("liveCaption").textContent = "A magyar felirat indításra vár."; createPlayer(id);
       byId("status").className = "status note"; byId("status").textContent = "Videó betöltve. A magyar felirat automatikusan készül…";
-      buildHungarianSubtitles();
+      buildHungarianSubtitles(id);
     };
-    byId("translate").onclick = buildHungarianSubtitles;
+    byId("translate").onclick = () => buildHungarianSubtitles();
     byId("syncEarlier").onclick = () => setSyncOffset(syncOffset + 0.5);
     byId("syncLater").onclick = () => setSyncOffset(syncOffset - 0.5);
     byId("syncReset").onclick = () => setSyncOffset(0);
@@ -224,7 +224,7 @@
       } catch (_) { byId("status").textContent = "A teljes képernyős módot a böngésző nem engedte."; }
     };
     createPlayer(DEFAULT_VIDEO_ID);
-    buildHungarianSubtitles();
+    win.setTimeout(() => buildHungarianSubtitles(DEFAULT_VIDEO_ID), 0);
   }
   return { DEFAULT_VIDEO_ID, VIDEO_SYNC_DEFAULTS, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, splitText, translateText, translateRowsWithContext, stripNonSpeechMarkers, normalizeHungarian, splitCaptionText, findSubtitleAt, expandSubtitle, start };
 });
