@@ -40,7 +40,7 @@
       pl: collapseRepeats(match[2].replace(/[[(](?:muzyka|aplauz|śmiech|smiech|zene|taps|nevetés|nevets|laughter|music)[\])]/gi, "").replace(/\[[^\]]*__[^\]]*\]/g, "").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim())
     }));
   }
-  function mergeTranscriptRows(rows, maxGap = 0.35, maxDuration = 9, maxChars = 220) {
+  function mergeTranscriptRows(rows, maxGap = 0.35, maxDuration = 12, maxChars = 300) {
     const merged = [];
     for (const row of rows.filter(row => row.pl && row.pl.trim())) {
       const prev = merged[merged.length - 1];
@@ -62,25 +62,36 @@
     if (current) chunks.push(current);
     return chunks;
   }
-  async function translateText(text, fetchFn) {
+  async function translateViaGoogle(text, sourceLang, targetLang, fetchFn) {
     const translated = [];
     for (const chunk of splitText(text)) {
-      let value = "";
-      try {
-        const url = `${TRANSLATE_ENDPOINT}?client=gtx&sl=pl&tl=hu&dt=t&q=${encodeURIComponent(chunk)}`;
-        const response = await fetchFn(url, { headers: { Accept: "application/json" } });
-        const data = await response.json();
-        value = Array.isArray(data?.[0]) ? data[0].map(part => part?.[0] || "").join("") : "";
-      } catch (_) {}
-      if (!value) {
-        const fallback = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=pl%7Chu`;
-        const response = await fetchFn(fallback, { headers: { Accept: "application/json" } });
-        const data = await response.json(); value = data.responseData?.translatedText || "";
-      }
+      const url = `${TRANSLATE_ENDPOINT}?client=gtx&sl=${sourceLang}&tl=${targetLang}&dt=t&q=${encodeURIComponent(chunk)}`;
+      const response = await fetchFn(url, { headers: { Accept: "application/json" } });
+      const data = await response.json();
+      const value = Array.isArray(data?.[0]) ? data[0].map(part => part?.[0] || "").join("") : "";
       if (!value) throw new Error("A fordítószolgáltatás nem adott választ.");
-      translated.push(normalizeHungarian(value));
+      translated.push(value.trim());
     }
     return translated.join(" ");
+  }
+  async function translateText(text, fetchFn) {
+    try {
+      const english = await translateViaGoogle(text, "pl", "en", fetchFn);
+      const hungarian = await translateViaGoogle(english, "en", "hu", fetchFn);
+      return normalizeHungarian(hungarian);
+    } catch (_) {
+      try {
+        const direct = await translateViaGoogle(text, "pl", "hu", fetchFn);
+        return normalizeHungarian(direct);
+      } catch (_) {
+        const fallback = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=pl%7Chu`;
+        const response = await fetchFn(fallback, { headers: { Accept: "application/json" } });
+        const data = await response.json();
+        const value = data.responseData?.translatedText || "";
+        if (!value) throw new Error("A fordítószolgáltatás nem adott választ.");
+        return normalizeHungarian(value);
+      }
+    }
   }
   async function translateRowsWithContext(rows, fetchFn, groupSize = 3) {
     const output = rows.map(row => ({ ...row }));
@@ -198,7 +209,7 @@
       const id = videoId || getVideoId(byId("url").value) || currentVideoId;
       byId("status").className = "status note"; byId("status").textContent = "⏳ Lengyel felirat letöltése…"; byId("translate").disabled = true;
       try {
-        const cached = win.localStorage?.getItem(`plhu-v016-${id}`);
+        const cached = win.localStorage?.getItem(`plhu-v017-${id}`);
         if (cached) subtitles = JSON.parse(cached);
         else {
           const response = await fetchFn(transcriptEndpoint(id), { headers: { Accept: "text/plain" } });
@@ -209,7 +220,7 @@
           byId("status").textContent = "⏳ Kontextusos magyar fordítás készítése…";
           subtitles = await translateRowsWithContext(subtitles, fetchFn);
           subtitles = subtitles.flatMap(row => expandSubtitle(row));
-          win.localStorage?.setItem(`plhu-v016-${id}`, JSON.stringify(subtitles));
+          win.localStorage?.setItem(`plhu-v017-${id}`, JSON.stringify(subtitles));
         }
         byId("status").className = "status ok"; byId("status").textContent = `✓ Magyar felirat kész: ${subtitles.length} időzített blokk. Indítsd el a videót; az első szöveg 0:09-nél jelenik meg.`;
         byId("out").textContent = subtitles.map(s => `[${Math.floor(s.start / 60)}:${String(s.start % 60).padStart(2, "0")}] ${s.hu}`).join("\n\n"); beginSync();
@@ -239,5 +250,5 @@
     createPlayer(DEFAULT_VIDEO_ID);
     win.setTimeout(() => buildHungarianSubtitles(DEFAULT_VIDEO_ID), 0);
   }
-  return { DEFAULT_VIDEO_ID, VIDEO_SYNC_DEFAULTS, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, mergeTranscriptRows, splitText, translateText, translateRowsWithContext, stripNonSpeechMarkers, normalizeHungarian, splitCaptionText, findSubtitleAt, expandSubtitle, start };
+  return { DEFAULT_VIDEO_ID, VIDEO_SYNC_DEFAULTS, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, mergeTranscriptRows, splitText, translateViaGoogle, translateText, translateRowsWithContext, stripNonSpeechMarkers, normalizeHungarian, splitCaptionText, findSubtitleAt, expandSubtitle, start };
 });
