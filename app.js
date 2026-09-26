@@ -72,7 +72,6 @@
     let value = String(text || "").replace(/\s+/g, " ").trim();
     if (!value) return "";
     value = value.replace(/\s+([,.!?;:])/g, "$1").replace(/([,.!?;:])(?=[^\s"')\]])/g, "$1 ");
-    value = value.replace(/\bi\b/g, "én");
     value = value.charAt(0).toLocaleUpperCase("hu-HU") + value.slice(1);
     if (!/[.!?…]$/.test(value) && value.length > 3) value += ".";
     return value;
