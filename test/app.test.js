@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { DEFAULT_VIDEO_ID, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, splitText, translateText, normalizeHungarian, splitCaptionText, findSubtitleAt, expandSubtitle } = require("../app.js");
+const { DEFAULT_VIDEO_ID, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, splitText, translateText, translateRowsWithContext, normalizeHungarian, splitCaptionText, findSubtitleAt, expandSubtitle } = require("../app.js");
 test("recognizes YouTube URLs and rejects foreign hosts", () => {
   const id = DEFAULT_VIDEO_ID;
   for (const url of [id, `https://youtu.be/${id}`, `https://www.youtube.com/watch?v=${id}`, `https://www.youtube.com/embed/${id}`, `https://www.youtube.com/shorts/${id}`, `https://www.youtube.com/live/${id}`]) assert.equal(getVideoId(url), id);
@@ -40,4 +40,19 @@ test("splits Hungarian captions without cutting words", () => {
   const parts = splitCaptionText("Ez az első mondat. Ez a második mondat, amely valamivel hosszabb.", 30);
   assert.ok(parts.length >= 2);
   assert.ok(parts.every(part => part.length <= 30 || !part.includes(" ")));
+});
+
+
+test("translates adjacent Polish rows with shared context and keeps timing", async () => {
+  const rows = [{ start: 1, end: 3, pl: "Pierwsze zdanie" }, { start: 3, end: 5, pl: "Drugie zdanie" }];
+  const fakeFetch = async url => {
+    const q = new URL(url).searchParams.get("q");
+    return { ok: true, json: async () => [[[q.includes("|||") ? "Első mondat ||| Második mondat" : "Tartalék fordítás", q]]] };
+  };
+  const out = await translateRowsWithContext(rows, fakeFetch, 3);
+  assert.equal(out.length, 2);
+  assert.equal(out[0].start, 1);
+  assert.equal(out[1].end, 5);
+  assert.equal(out[0].hu, "Első mondat.");
+  assert.equal(out[1].hu, "Második mondat.");
 });
