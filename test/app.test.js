@@ -4,9 +4,9 @@ const { DEFAULT_VIDEO_ID, getVideoId, transcriptEndpoint, timestampToSeconds, co
 test("recognizes YouTube URLs and rejects foreign hosts", () => {
   const id = DEFAULT_VIDEO_ID;
   for (const url of [id, `https://youtu.be/${id}`, `https://www.youtube.com/watch?v=${id}`, `https://www.youtube.com/embed/${id}`, `https://www.youtube.com/shorts/${id}`, `https://www.youtube.com/live/${id}`]) assert.equal(getVideoId(url), id);
-  assert.equal(getVideoId("https://example.com/watch?v=RWKjvaV_rv4"), null); assert.equal(getVideoId(""), null);
+  assert.equal(getVideoId("https://example.com/watch?v=787TQgRSxq8"), null); assert.equal(getVideoId(""), null);
 });
-test("builds the Polish transcript endpoint", () => assert.equal(transcriptEndpoint(DEFAULT_VIDEO_ID), "https://youtube-transcript.ai/transcript/RWKjvaV_rv4.txt?lang=pl"));
+test("builds the Polish transcript endpoint", () => assert.equal(transcriptEndpoint(DEFAULT_VIDEO_ID), "https://youtube-transcript.ai/transcript/787TQgRSxq8.txt?lang=pl"));
 test("parses timed transcript blocks", () => {
   const input = ["## Transcript", "[0:09] Dzień dobry", "", "[1:11] Do widzenia", "---"].join(String.fromCharCode(10));
   const rows = parseTranscript(input);
@@ -55,4 +55,12 @@ test("translates adjacent Polish rows with shared context and keeps timing", asy
   assert.equal(out[1].end, 5);
   assert.equal(out[0].hu, "Első mondat.");
   assert.equal(out[1].hu, "Második mondat.");
+});
+
+
+test("keeps short translated rows intact to avoid over-fragmentation", () => {
+  const rows = expandSubtitle({ start: 10, end: 16, hu: "Ez egy rövid, természetes magyar felirat, amelynek egyben kell maradnia." });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].start, 10);
+  assert.equal(rows[0].end, 16);
 });
