@@ -47,7 +47,7 @@ test("translates adjacent Polish rows with shared context and keeps timing", asy
   const rows = [{ start: 1, end: 3, pl: "Pierwsze zdanie" }, { start: 3, end: 5, pl: "Drugie zdanie" }];
   const fakeFetch = async url => {
     const q = new URL(url).searchParams.get("q");
-    return { ok: true, json: async () => [[[q.includes("|||") ? "Első mondat ||| Második mondat" : "Tartalék fordítás", q]]] };
+    return { ok: true, json: async () => [[[q.includes("[[PLHU_1]]") ? "[[PLHU_1]] Első mondat [[PLHU_2]] Második mondat" : "Tartalék fordítás", q]]] };
   };
   const out = await translateRowsWithContext(rows, fakeFetch, 3);
   assert.equal(out.length, 2);
