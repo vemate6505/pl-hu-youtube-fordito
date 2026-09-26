@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>PL → HU YouTube Fordító v0.11</title>
+  <title>PL → HU YouTube Fordító v0.11.1</title>
   <style>
     :root{color-scheme:dark;--bg:#0b0d10;--card:#171a20;--line:#343943;--muted:#b9bec8;--green:#2f8b66;--red:#ff747d}
     *{box-sizing:border-box} body{margin:0;background:var(--bg);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
@@ -18,18 +18,18 @@
   </style>
 </head>
 <body><main>
-  <h1>🇵🇱 → 🇭🇺 YouTube<br>Fordító <small style="font-size:.45em">v0.11</small></h1>
+  <h1>🇵🇱 → 🇭🇺 YouTube<br>Fordító <small style="font-size:.45em">v0.11.1</small></h1>
   <section class="card">
     <input id="url" value="https://youtu.be/787TQgRSxq8" aria-label="YouTube URL">
     <button id="load">Videó betöltése</button>
-    <p class="note">v0.11: Subtitle Flow: a fő tesztvideó a 787TQgRSxq8; kevesebb, hosszabb feliratblokk, megtartott kontextus és teljes képernyős magyar felirat.</p>
+    <p class="note">v0.11.1: Mobile Rotate: a fő tesztvideó a 787TQgRSxq8; kevésbé tördelt felirat, teljes képernyő és a telefon automatikus álló/fekvő forgatása.</p>
   </section>
 
   <div id="playerShell" class="player">
     <div id="player"></div>
     <div id="overlay" class="overlay">A magyar felirat indításra vár.</div>
   </div>
-  <button id="fullscreen">⛶ Fekvő teljes képernyő magyar felirattal</button>
+  <button id="fullscreen">⛶ Teljes képernyő magyar felirattal</button>
   <div class="card" style="padding:16px;margin-top:14px">
     <div style="display:flex;gap:8px;align-items:center"><button id="syncEarlier" style="margin:0">Felirat előbb +0,5 s</button><button id="syncLater" style="margin:0">Felirat később −0,5 s</button></div>
     <p class="note" style="text-align:center;margin:12px 0 0">Szinkron: <strong id="syncValue">+0.0 s</strong></p>
