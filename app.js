@@ -37,7 +37,7 @@
     return matches.map((match, index) => ({
       start: timestampToSeconds(match[1]),
       end: index + 1 < matches.length ? timestampToSeconds(matches[index + 1][1]) : timestampToSeconds(match[1]) + 12,
-      pl: collapseRepeats(match[2].replace(/\[Muzyka\]/g, "[Zene]").replace(/\[Aplauz\]/g, "[Taps]").replace(/\[[^\]]*__[^\]]*\]/g, "").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim())
+      pl: collapseRepeats(match[2].replace(/[[(](?:muzyka|aplauz|śmiech|smiech|zene|taps|nevetés|nevets|laughter|music)[\])]/gi, "").replace(/\[[^\]]*__[^\]]*\]/g, "").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim())
     }));
   }
   function splitText(text, limit = 430) {
@@ -180,7 +180,7 @@
       const id = getVideoId(byId("url").value) || currentVideoId;
       byId("status").className = "status note"; byId("status").textContent = "⏳ Lengyel felirat letöltése…"; byId("translate").disabled = true;
       try {
-        const cached = win.localStorage?.getItem(`plhu-v012-${id}`);
+        const cached = win.localStorage?.getItem(`plhu-v013-${id}`);
         if (cached) subtitles = JSON.parse(cached);
         else {
           const response = await fetchFn(transcriptEndpoint(id), { headers: { Accept: "text/plain" } });
@@ -191,7 +191,7 @@
           byId("status").textContent = "⏳ Kontextusos magyar fordítás készítése…";
           subtitles = await translateRowsWithContext(subtitles, fetchFn);
           subtitles = subtitles.flatMap(row => expandSubtitle(row));
-          win.localStorage?.setItem(`plhu-v012-${id}`, JSON.stringify(subtitles));
+          win.localStorage?.setItem(`plhu-v013-${id}`, JSON.stringify(subtitles));
         }
         byId("status").className = "status ok"; byId("status").textContent = `✓ Magyar felirat kész: ${subtitles.length} időzített blokk. Indítsd el a videót; az első szöveg 0:09-nél jelenik meg.`;
         byId("out").textContent = subtitles.map(s => `[${Math.floor(s.start / 60)}:${String(s.start % 60).padStart(2, "0")}] ${s.hu}`).join("\n\n"); beginSync();
