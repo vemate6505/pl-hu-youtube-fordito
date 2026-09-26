@@ -8,7 +8,7 @@ node --check app.js
 node --test test/*.test.js
 
 grep -q '<script src="app.js"></script>' index.html
-grep -q 'YouTube Fordító v0.12' index.html
+grep -q 'YouTube Fordító v0.12.1' index.html
 grep -q 'id="liveCaption"' index.html
 grep -q 'id="fullscreen"' index.html
 grep -q 'id="playerShell" class="player"' index.html
@@ -24,3 +24,7 @@ fi
 echo "MORDO-PLHU ellenőrzések sikeresek."
 
 ! grep -q 'orientation.*lock' app.js
+
+grep -q 'app.js?v=0.12.1' index.html
+grep -q '787TQgRSxq8' index.html
+grep -q 'DEFAULT_VIDEO_ID = "787TQgRSxq8"' app.js
