@@ -8,7 +8,7 @@ node --check app.js
 node --test test/*.test.js
 
 grep -q '<script src="app.js"></script>' index.html
-grep -q 'YouTube Fordító v0.11' index.html
+grep -q 'YouTube Fordító v0.11.1' index.html
 grep -q 'id="liveCaption"' index.html
 grep -q 'id="fullscreen"' index.html
 grep -q 'id="playerShell" class="player"' index.html
@@ -22,3 +22,5 @@ if grep -RInE --include='*.js' --include='*.html' --include='*.json' \
 fi
 
 echo "MORDO-PLHU ellenőrzések sikeresek."
+
+! grep -q 'orientation.*lock' app.js
