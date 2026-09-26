@@ -40,6 +40,19 @@
       pl: collapseRepeats(match[2].replace(/[[(](?:muzyka|aplauz|śmiech|smiech|zene|taps|nevetés|nevets|laughter|music)[\])]/gi, "").replace(/\[[^\]]*__[^\]]*\]/g, "").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim())
     }));
   }
+  function mergeTranscriptRows(rows, maxGap = 0.35, maxDuration = 9, maxChars = 220) {
+    const merged = [];
+    for (const row of rows.filter(row => row.pl && row.pl.trim())) {
+      const prev = merged[merged.length - 1];
+      const gap = prev ? row.start - prev.end : Infinity;
+      const combined = prev ? `${prev.pl} ${row.pl}`.trim() : row.pl;
+      if (prev && gap <= maxGap && row.end - prev.start <= maxDuration && combined.length <= maxChars) {
+        prev.end = row.end;
+        prev.pl = combined;
+      } else merged.push({ ...row });
+    }
+    return merged;
+  }
   function splitText(text, limit = 430) {
     const words = text.split(/\s+/); const chunks = []; let current = "";
     for (const word of words) {
@@ -185,18 +198,18 @@
       const id = videoId || getVideoId(byId("url").value) || currentVideoId;
       byId("status").className = "status note"; byId("status").textContent = "⏳ Lengyel felirat letöltése…"; byId("translate").disabled = true;
       try {
-        const cached = win.localStorage?.getItem(`plhu-v015-${id}`);
+        const cached = win.localStorage?.getItem(`plhu-v016-${id}`);
         if (cached) subtitles = JSON.parse(cached);
         else {
           const response = await fetchFn(transcriptEndpoint(id), { headers: { Accept: "text/plain" } });
           const text = await response.text();
           if (!response.ok) throw new Error(`Transcript HTTP ${response.status}`);
-          subtitles = parseTranscript(text);
+          subtitles = mergeTranscriptRows(parseTranscript(text));
           if (!subtitles.length) throw new Error("Nem található időzített lengyel felirat.");
           byId("status").textContent = "⏳ Kontextusos magyar fordítás készítése…";
           subtitles = await translateRowsWithContext(subtitles, fetchFn);
           subtitles = subtitles.flatMap(row => expandSubtitle(row));
-          win.localStorage?.setItem(`plhu-v015-${id}`, JSON.stringify(subtitles));
+          win.localStorage?.setItem(`plhu-v016-${id}`, JSON.stringify(subtitles));
         }
         byId("status").className = "status ok"; byId("status").textContent = `✓ Magyar felirat kész: ${subtitles.length} időzített blokk. Indítsd el a videót; az első szöveg 0:09-nél jelenik meg.`;
         byId("out").textContent = subtitles.map(s => `[${Math.floor(s.start / 60)}:${String(s.start % 60).padStart(2, "0")}] ${s.hu}`).join("\n\n"); beginSync();
@@ -226,5 +239,5 @@
     createPlayer(DEFAULT_VIDEO_ID);
     win.setTimeout(() => buildHungarianSubtitles(DEFAULT_VIDEO_ID), 0);
   }
-  return { DEFAULT_VIDEO_ID, VIDEO_SYNC_DEFAULTS, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, splitText, translateText, translateRowsWithContext, stripNonSpeechMarkers, normalizeHungarian, splitCaptionText, findSubtitleAt, expandSubtitle, start };
+  return { DEFAULT_VIDEO_ID, VIDEO_SYNC_DEFAULTS, getVideoId, transcriptEndpoint, timestampToSeconds, collapseRepeats, parseTranscript, mergeTranscriptRows, splitText, translateText, translateRowsWithContext, stripNonSpeechMarkers, normalizeHungarian, splitCaptionText, findSubtitleAt, expandSubtitle, start };
 });
